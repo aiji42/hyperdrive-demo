@@ -1,32 +1,37 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { Client } from 'pg';
 
 export interface Env {
-	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-	// MY_KV_NAMESPACE: KVNamespace;
-	//
-	// Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-	// MY_DURABLE_OBJECT: DurableObjectNamespace;
-	//
-	// Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-	// MY_BUCKET: R2Bucket;
-	//
-	// Example binding to a Service. Learn more at https://developers.cloudflare.com/workers/runtime-apis/service-bindings/
-	// MY_SERVICE: Fetcher;
-	//
-	// Example binding to a Queue. Learn more at https://developers.cloudflare.com/queues/javascript-apis/
-	// MY_QUEUE: Queue;
+	HYPERDRIVE: Hyperdrive;
 }
 
 export default {
-	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-		return new Response('Hello World!');
+	async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+		if (new URL(request.url).pathname !== '/') return new Response(null);
+
+		// If you use connection without hyperdrive
+		// const client = new Client('postgres://use:password@host:port/database?sslmode=require');
+
+		const client = new Client({ connectionString: env.HYPERDRIVE.connectionString });
+
+		const bench = async (needConnect: boolean) => {
+			const startTime = performance.now();
+
+			if (needConnect) await client.connect();
+
+			await client.query({ text: 'SELECT * FROM users LIMIT 50' });
+
+			const endTime = performance.now();
+
+			return endTime - startTime;
+		};
+
+		const results = [];
+		while (results.length < 10) {
+			results.push(await bench(results.length === 0));
+		}
+
+		ctx.waitUntil(client.end());
+
+		return Response.json(results.map((n) => `${n}ms`));
 	},
 };

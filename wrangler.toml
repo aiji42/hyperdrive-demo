@@ -1,6 +1,11 @@
 name = "hyperdrive-demo"
 main = "src/index.ts"
 compatibility_date = "2023-09-22"
+node_compat = true
+
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "962876c34e2243f5b98acd7f5170e754"
 
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.
