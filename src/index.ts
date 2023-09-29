@@ -2,32 +2,27 @@ import { Client } from 'pg';
 
 export interface Env {
 	HYPERDRIVE: Hyperdrive;
+	DATABASE_URL: string;
 }
 
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext) {
-		if (new URL(request.url).pathname !== '/') return new Response(null);
+		const pathname = new URL(request.url).pathname;
+		if (!pathname.match(/^\/(normal|hyperdrive)/)) return new Response(null, { status: 404 });
 
-		// If you use connection without hyperdrive
-		// const client = new Client('postgres://use:password@host:port/database?sslmode=require');
+		const client = new Client(pathname.includes('hyperdrive') ? { connectionString: env.HYPERDRIVE.connectionString } : env.DATABASE_URL);
 
-		const client = new Client({ connectionString: env.HYPERDRIVE.connectionString });
-
-		const bench = async (needConnect: boolean) => {
+		const results: number[] = [];
+		while (results.length < 10) {
 			const startTime = performance.now();
 
-			if (needConnect) await client.connect();
+			if (results.length < 1) await client.connect();
 
-			await client.query({ text: 'SELECT * FROM users LIMIT 50' });
+			await client.query({ text: `SELECT * FROM users LIMIT 50` });
 
 			const endTime = performance.now();
 
-			return endTime - startTime;
-		};
-
-		const results = [];
-		while (results.length < 10) {
-			results.push(await bench(results.length === 0));
+			results.push(endTime - startTime);
 		}
 
 		ctx.waitUntil(client.end());

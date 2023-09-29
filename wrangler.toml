@@ -5,7 +5,7 @@ node_compat = true
 
 [[hyperdrive]]
 binding = "HYPERDRIVE"
-id = "962876c34e2243f5b98acd7f5170e754"
+id = "6cd52fb70f3d4475b22891e1bee2de69"
 
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.
